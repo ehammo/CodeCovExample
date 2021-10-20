@@ -1,0 +1,37 @@
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = '0.8.7'
+}
+
+tasks.withType(Test) {
+    jacoco.includeNoLocationClasses = true
+    jacoco.excludes = ['jdk.internal.*']
+}
+// for instrumented tests depends on should be like this:
+//dependsOn: ['testDebugUnitTest', 'createDebugCoverageReport']
+task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
+
+    reports {
+        csv.enabled false
+        xml.enabled false
+        html {
+            enabled true
+            destination file("${buildDir}/coverage-report")
+        }
+    }
+
+    def mainSrc = "${project.projectDir}/src/main/java"
+    sourceDirectories.setFrom(files([mainSrc]))
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*']
+    //java compiled classes
+    def javaTree = fileTree(dir: "$project.buildDir/intermediates/javac/debug/classes", excludes: fileFilter)
+    //kotlin compiled classes
+    def kotlinTree = fileTree(dir: "$project.buildDir/tmp/kotlin-classes/debug", excludes: fileFilter)
+    classDirectories.setFrom(files([javaTree, kotlinTree]))
+    executionData.setFrom(fileTree(dir: "$buildDir", includes: [
+          "jacoco/testDebugUnitTest.exec",
+          "outputs/unit_test_code_coverage/debugUnitTest/*.exec",
+          "outputs/code-coverage/connected/*coverage.ec"
+    ]))
+}
