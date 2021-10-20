@@ -13,12 +13,8 @@ tasks.withType(Test) {
 task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
 
     reports {
-        csv.enabled false
-        xml.enabled false
-        html {
-            enabled true
-            destination file("${buildDir}/coverage-report")
-        }
+        xml.enabled true
+        html.enabled true
     }
 
     def mainSrc = "${project.projectDir}/src/main/java"
@@ -34,4 +30,38 @@ task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
           "outputs/unit_test_code_coverage/debugUnitTest/*.exec",
           "outputs/code-coverage/connected/*coverage.ec"
     ]))
+}
+apply plugin: 'com.github.nbaztec.coveralls-jacoco'
+task jacocoFullReport(type: JacocoReport, dependsOn: ['jacocoTestReport'], group: 'Coverage reports') {
+    def mainSrc = "${project.projectDir}/src/main/java"
+    sourceDirectories.setFrom(files([mainSrc]))
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*']
+    //java compiled classes
+    def javaTree = fileTree(dir: "$project.buildDir/intermediates/javac/debug/classes", excludes: fileFilter)
+    //kotlin compiled classes
+    def kotlinTree = fileTree(dir: "$project.buildDir/tmp/kotlin-classes/debug", excludes: fileFilter)
+    classDirectories.setFrom(files([javaTree, kotlinTree]))
+    executionData.setFrom(fileTree(dir: "$buildDir", includes: [
+            "jacoco/testDebugUnitTest.exec",
+            "outputs/unit_test_code_coverage/debugUnitTest/*.exec",
+            "outputs/code-coverage/connected/*coverage.ec"
+    ]))
+
+    reports {
+        html {
+            enabled true
+            destination file("$buildDir/reports/jacoco/html")
+        }
+        xml {
+            enabled true
+            destination file("$buildDir/reports/jacoco/jacocoFullReport.xml")
+        }
+    }
+
+    coverallsJacoco {
+        reportPath = "$buildDir/reports/jacoco/jacocoFullReport.xml"
+        reportSourceSets =  sourceDirectories
+    }
+
+    tasks.coverallsJacoco.dependsOn(it)
 }

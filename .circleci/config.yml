@@ -10,14 +10,15 @@ jobs:
       - checkout
       - run:
           name: Lint & Unit tests
-          command: ./gradlew lint jacocoTestReport
+          command: ./gradlew clean lint test jacocoTestReport
       - store_test_results:
           path: app/build/test-results
       - store_artifacts:
           path: app/build/reports
           destination: reports
-      - codecov/upload:
-          file: app/build/coverage-report
+      - run:
+          name: Upload results to coverall
+          command: ./gradlew coverallsJacoco
       - run:
           name: Assemble build release
           command: ./gradlew assembleRelease
